@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brain Tumor Detection System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+</head>
+
+<body>
+    <div class="bg-glow"></div>
+
+    <header>
+        <div class="header-inner">
+            <div class="logo">
+                <span class="logo-text">Batch<span class="accent">23</span></span>
+            </div>
+            <p class="tagline">Brain Tumor MRI Detection System</p>
+        </div>
+    </header>
+
+    <main>
+        <section class="upload-section">
+            <div class="card upload-card" id="dropZone">
+                <h2>Upload MRI Scan</h2>
+                <p class="sub">Drag & drop your MRI image here, or click to select</p>
+                <input type="file" id="fileInput" accept="image/*" hidden />
+                <button class="btn-upload" onclick="document.getElementById('fileInput').click()">
+                    Choose Image
+                </button>
+                <p class="formats">Supported: JPG, PNG, BMP, TIFF</p>
+            </div>
+
+            <!-- Preview -->
+            <div class="card preview-card" id="previewCard" style="display:none;">
+                <h3>MRI Preview</h3>
+                <img id="previewImg" src="" alt="MRI Preview" />
+                <button class="btn-detect" id="detectBtn" onclick="runDetection()">
+                    <span>Detect Tumor</span>
+                </button>
+                <button class="btn-clear" onclick="clearAll()">✕ Clear</button>
+            </div>
+        </section>
+
+        <!-- Result Section -->
+        <section class="result-section" id="resultSection" style="display:none;">
+            <div class="card result-card" id="resultCard">
+                <div class="result-header" id="resultHeader">
+                    <span class="result-icon" id="resultIcon"></span>
+                    <h2 id="resultLabel"></h2>
+                    <p id="resultConfidence"></p>
+                </div>
+
+                <div class="scores-grid">
+                    <h4>Confidence per Class</h4>
+                    <div id="scoresBars"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading Spinner -->
+        <div class="spinner-overlay" id="spinner" style="display:none;">
+            <div class="spinner"></div>
+            <p>Analyzing MRI scan...</p>
+        </div>
+    </main>
+
+    <footer>
+        <p>Done by Batch 23 For the PAD Project</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
