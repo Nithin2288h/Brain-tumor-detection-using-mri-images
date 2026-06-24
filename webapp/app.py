@@ -1,46 +1,39 @@
 import os
 import numpy as np
 from flask import Flask, request, jsonify, render_template
-from flask_cors import CORS
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.models import load_model
 from PIL import Image
 import io
 
 app = Flask(__name__)
-CORS(app)
 
-# ── Rebuild model architecture (same as notebook) and load weights ──
-# This bypasses Keras version serialization issues
-def build_model():
-    model = Sequential([
-        Conv2D(32, (3, 3), activation='relu', input_shape=(128, 128, 3)),
-        MaxPooling2D(2, 2),
-        Conv2D(64, (3, 3), activation='relu'),
-        MaxPooling2D(2, 2),
-        Conv2D(128, (3, 3), activation='relu'),
-        MaxPooling2D(2, 2),
-        Flatten(),
-        Dense(512, activation='relu'),
-        Dropout(0.5),
-        Dense(4, activation='softmax')
-    ])
-    return model
-
+# Path to the trained model (one level up from webapp/)
 MODEL_PATH = os.path.join(os.path.dirname(__file__), '..', 'brain_tumor_detector.h5')
-model = build_model()
-model.load_weights(MODEL_PATH)
-print("Model weights loaded successfully!")
 
-CLASS_LABELS = ['Glioma', 'Meningioma', 'No Tumor', 'Pituitary']
-IMAGE_SIZE = (128, 128)
+# Class labels — must match training order in model.ipynb
+CLASS_LABELS = ['glioma', 'meningioma', 'notumor', 'pituitary']
+CLASS_DISPLAY = {
+    'glioma':     'Glioma',
+    'meningioma': 'Meningioma',
+    'notumor':    'No Tumor',
+    'pituitary':  'Pituitary',
+}
+
+# Image size used during training
+IMG_SIZE = (128, 128)
+
+# Load model once at startup
+print("Loading model...")
+model = load_model(MODEL_PATH)
+print("Model loaded successfully!")
 
 
 def preprocess_image(image_bytes):
+    """Convert uploaded image bytes to model-ready numpy array."""
     img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
-    img = img.resize(IMAGE_SIZE)
-    img_array = np.array(img) / 255.0
-    return np.expand_dims(img_array, axis=0)
+    img = img.resize(IMG_SIZE)
+    arr = np.array(img, dtype=np.float32) / 255.0
+    return np.expand_dims(arr, axis=0)
 
 
 @app.route('/')
@@ -61,20 +54,23 @@ def predict():
         image_bytes = file.read()
         img_array = preprocess_image(image_bytes)
 
-        predictions = model.predict(img_array, verbose=0)[0]
-        predicted_index = int(np.argmax(predictions))
-        confidence = float(np.max(predictions)) * 100
-        predicted_label = CLASS_LABELS[predicted_index]
+        predictions = model.predict(img_array)[0]          # shape: (4,)
+        pred_idx = int(np.argmax(predictions))
+        raw_label = CLASS_LABELS[pred_idx]
+        predicted_class = CLASS_DISPLAY[raw_label]
+        confidence = float(predictions[pred_idx]) * 100
 
         all_scores = {
-            CLASS_LABELS[i]: round(float(predictions[i]) * 100, 2)
+            CLASS_DISPLAY[CLASS_LABELS[i]]: float(predictions[i]) * 100
             for i in range(len(CLASS_LABELS))
         }
 
+        is_tumor = raw_label != 'notumor'
+
         return jsonify({
-            'predicted_class': predicted_label,
-            'confidence': round(confidence, 2),
-            'is_tumor': predicted_label != 'No Tumor',
+            'predicted_class': predicted_class,
+            'confidence': confidence,
+            'is_tumor': is_tumor,
             'all_scores': all_scores
         })
 
@@ -83,4 +79,4 @@ def predict():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)

@@ -1,0 +1,24 @@
+# Git ignore file for Brain Tumor Detection project
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# VS Code settings
+.vscode/
+
+# Python cache and files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Large model files (>100MB, not suitable for basic GitHub push)
+*.h5
+*.keras
+*.pb
+*.tflite
+*.onnx
+
+# Dataset
+dataset/

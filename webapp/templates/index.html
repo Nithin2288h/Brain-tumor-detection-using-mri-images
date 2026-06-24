@@ -2,77 +2,659 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Brain Tumor Detection System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brain Tumor Detection | MRI Analysis</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+
+  <style>
+    /* ── Reset ── */
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #021028, #0a2a66, #0033cc);
+      color: white;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Brain background image – fixed, right side, large ── */
+    .brain-bg {
+      position: fixed;
+      top: 0;
+      right: -60px;
+      height: 100vh;
+      width: 55vw;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .brain-bg img {
+      width: 90%;
+      max-width: 700px;
+      opacity: 0.22;
+      filter: drop-shadow(0 0 40px rgba(0, 180, 255, 0.5));
+      animation: floatBrain 6s ease-in-out infinite,
+        pulseGlow 4s ease-in-out infinite alternate;
+    }
+
+    @keyframes floatBrain {
+
+      0%,
+      100% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-22px);
+      }
+    }
+
+    @keyframes pulseGlow {
+      0% {
+        opacity: 0.18;
+      }
+
+      100% {
+        opacity: 0.30;
+      }
+    }
+
+    /* ── All page content sits above the brain bg ── */
+    header,
+    main,
+    footer {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 28px 48px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(2, 10, 40, 0.55);
+      backdrop-filter: blur(14px);
+    }
+
+    .header-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .logo-text {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      cursor: default;
+    }
+
+    /* ── Team dropdown ── */
+    .team-dropdown {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+    }
+
+    .team-list {
+      position: absolute;
+      top: 120%;
+      left: 0;
+      background: rgba(60, 60, 60, 0.95);
+      backdrop-filter: blur(15px);
+      border-radius: 12px;
+      padding: 15px 20px;
+      min-width: 180px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: 0.3s ease;
+      pointer-events: none;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 100;
+    }
+
+    .team-dropdown:hover .team-list {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .team-list p {
+      margin: 8px 0;
+      font-size: 14px;
+      font-weight: 500;
+      color: #cccccc;
+      transition: 0.2s ease;
+      text-align: left;
+    }
+
+    .team-list p:hover {
+      color: white;
+      transform: translateX(5px);
+    }
+
+    .accent {
+      color: #4cc9ff;
+    }
+
+    .tagline {
+      font-size: 13px;
+      opacity: 0.65;
+    }
+
+    /* ── Main ── */
+    main {
+      padding: 50px 48px 70px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 36px;
+    }
+
+    /* ── Cards row: upload + preview side by side (centered) ── */
+    .cards-row {
+      display: flex;
+      gap: 28px;
+      align-items: stretch;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .upload-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Card base ── */
+    .card {
+      background: rgba(160, 160, 160, 0.18);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(200, 200, 200, 0.2);
+      border-radius: 20px;
+      padding: 32px;
+      width: 360px;
+      text-align: center;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    /* ── Upload card ── */
+    .upload-card h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .upload-card .sub {
+      font-size: 0.85rem;
+      opacity: 0.6;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .formats {
+      font-size: 0.72rem;
+      opacity: 0.45;
+      margin-top: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Preview card ── */
+    .preview-card h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      opacity: 0.6;
+      margin-bottom: 14px;
+      text-align: left;
+    }
+
+    .img-wrapper {
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.3);
+      margin-bottom: 16px;
+    }
+
+    .img-wrapper img {
+      width: 100%;
+      max-height: 230px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .preview-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    /* ── Buttons ── */
+    button {
+      padding: 11px 22px;
+      border-radius: 10px;
+      border: none;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.25s ease;
+    }
+
+    .btn-upload {
+      background: linear-gradient(90deg, #3a86ff, #4cc9ff);
+      color: white;
+      width: 100%;
+      padding: 13px;
+    }
+
+    .btn-upload:hover {
+      opacity: 0.88;
+      transform: scale(1.02);
+    }
+
+    .btn-detect {
+      flex: 1;
+      background: linear-gradient(90deg, #0077ff, #00b4ff);
+      color: white;
+      box-shadow: 0 4px 20px rgba(0, 119, 255, 0.4);
+    }
+
+    .btn-detect:hover {
+      opacity: 0.9;
+      transform: scale(1.03);
+    }
+
+    .btn-detect:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-clear {
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-clear:hover {
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    /* ── Result section – full width below the two cards ── */
+    .result-section {
+      width: 100%;
+      max-width: 760px;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .result-icon {
+      font-size: 2rem;
+      flex-shrink: 0;
+    }
+
+    .result-header h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .result-header p {
+      font-size: 0.88rem;
+      opacity: 0.65;
+      margin-top: 3px;
+    }
+
+    .tumor-color {
+      color: #f87171;
+    }
+
+    .no-tumor-color {
+      color: #34d399;
+    }
+
+    .divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 16px 0;
+    }
+
+    .scores-section h4 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      opacity: 0.5;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+
+    .score-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 11px;
+    }
+
+    .score-label {
+      width: 100px;
+      font-size: 0.83rem;
+      text-align: left;
+      flex-shrink: 0;
+    }
+
+    .score-bar-wrap {
+      flex: 1;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .score-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.25);
+      transition: width 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .score-bar.top {
+      background: linear-gradient(90deg, #3a86ff, #4cc9ff);
+    }
+
+    .score-bar.no-tumor {
+      background: linear-gradient(90deg, #059669, #34d399);
+    }
+
+    .score-value {
+      width: 46px;
+      text-align: right;
+      font-size: 0.78rem;
+      opacity: 0.6;
+      flex-shrink: 0;
+    }
+
+    .disclaimer {
+      margin-top: 18px;
+      font-size: 0.73rem;
+      opacity: 0.4;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 14px;
+    }
+
+    /* ── Spinner ── */
+    .spinner-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: rgba(2, 10, 40, 0.75);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .spinner-ring {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #4cc9ff;
+      animation: spin 0.85s linear infinite;
+      margin: 0 auto 14px;
+    }
+
+    .spinner-content {
+      text-align: center;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      opacity: 0.45;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+  </style>
 </head>
 
 <body>
-    <div class="bg-glow"></div>
 
-    <header>
-        <div class="header-inner">
-            <div class="logo">
-                <span class="logo-text">Batch<span class="accent">23</span></span>
-            </div>
-            <p class="tagline">Brain Tumor MRI Detection System</p>
+  <!-- Large Brain Image – Fixed Right Background -->
+  <div class="brain-bg">
+    <img src="https://pngimg.com/uploads/brain/brain_PNG52.png" alt="Brain Network">
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="team-dropdown">
+          <span class="logo-text">Batch<span class="accent">23</span></span>
+          <div class="team-list">
+            <p>Nithin S</p>
+            <p>Kunala Shiva</p>
+            <p>Shaik Raziya</p>
+          </div>
         </div>
-    </header>
+      </div>
+      <p class="tagline">Brain Tumor MRI Detection System</p>
+    </div>
+  </header>
 
-    <main>
-        <section class="upload-section">
-            <div class="card upload-card" id="dropZone">
-                <h2>Upload MRI Scan</h2>
-                <p class="sub">Drag & drop your MRI image here, or click to select</p>
-                <input type="file" id="fileInput" accept="image/*" hidden />
-                <button class="btn-upload" onclick="document.getElementById('fileInput').click()">
-                    Choose Image
-                </button>
-                <p class="formats">Supported: JPG, PNG, BMP, TIFF</p>
-            </div>
+  <main>
 
-            <!-- Preview -->
-            <div class="card preview-card" id="previewCard" style="display:none;">
-                <h3>MRI Preview</h3>
-                <img id="previewImg" src="" alt="MRI Preview" />
-                <button class="btn-detect" id="detectBtn" onclick="runDetection()">
-                    <span>Detect Tumor</span>
-                </button>
-                <button class="btn-clear" onclick="clearAll()">✕ Clear</button>
-            </div>
-        </section>
+    <!-- Cards Row: Upload (center) + Preview (beside it when active) -->
+    <div class="cards-row">
 
-        <!-- Result Section -->
-        <section class="result-section" id="resultSection" style="display:none;">
-            <div class="card result-card" id="resultCard">
-                <div class="result-header" id="resultHeader">
-                    <span class="result-icon" id="resultIcon"></span>
-                    <h2 id="resultLabel"></h2>
-                    <p id="resultConfidence"></p>
-                </div>
+      <!-- Upload Card -->
+      <div class="card upload-card">
+        <h2>Upload MRI Scan</h2>
+        <p class="sub">Select your MRI image to begin detection</p>
+        <input type="file" id="fileInput" accept="image/*" hidden>
+        <button class="btn-upload" onclick="document.getElementById('fileInput').click()">
+          Choose Image
+        </button>
+        <p class="formats">JPG &nbsp;·&nbsp; PNG &nbsp;·&nbsp; BMP &nbsp;·&nbsp; TIFF</p>
+      </div>
 
-                <div class="scores-grid">
-                    <h4>Confidence per Class</h4>
-                    <div id="scoresBars"></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Loading Spinner -->
-        <div class="spinner-overlay" id="spinner" style="display:none;">
-            <div class="spinner"></div>
-            <p>Analyzing MRI scan...</p>
+      <!-- Preview Card – appears beside upload card when image is selected -->
+      <div class="card preview-card" id="previewCard" style="display:none;">
+        <h3>MRI Preview</h3>
+        <div class="img-wrapper">
+          <img id="previewImg" src="" alt="MRI Preview">
         </div>
-    </main>
+        <div class="preview-actions">
+          <button class="btn-detect" id="detectBtn" onclick="runDetection()">Detect Tumor</button>
+          <button class="btn-clear" onclick="clearAll()">Clear</button>
+        </div>
+      </div>
 
-    <footer>
-        <p>Done by Batch 23 For the PAD Project</p>
-    </footer>
+    </div>
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <!-- Result Section – full width below the two cards -->
+    <div class="card result-section" id="resultSection" style="display:none;">
+      <div class="result-header" id="resultHeader">
+        <span class="result-icon" id="resultIcon"></span>
+        <div>
+          <h2 id="resultLabel"></h2>
+          <p id="resultConfidence"></p>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="scores-section">
+        <h4>Confidence per Class</h4>
+        <div id="scoresBars"></div>
+      </div>
+
+      <p class="disclaimer">Done by Batch 23 for PAD Project — demo only</p>
+    </div>
+
+  </main>
+
+  <!-- Loading Spinner -->
+  <div class="spinner-overlay" id="spinner" style="display:none;">
+    <div class="spinner-content">
+      <div class="spinner-ring"></div>
+      <p>Analyzing MRI scan...</p>
+    </div>
+  </div>
+
+  <footer>
+    <p>Brain Tumor MRI Detection &nbsp;·&nbsp; Pattern Anoamly Detection Project &nbsp;·&nbsp; Batch 23</p>
+  </footer>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const previewCard = document.getElementById('previewCard');
+    const previewImg = document.getElementById('previewImg');
+    const resultSection = document.getElementById('resultSection');
+    const spinner = document.getElementById('spinner');
+    let selectedFile = null;
+
+    // File input change
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) loadPreview(fileInput.files[0]);
+    });
+
+    // Drag & drop on upload card
+    const uploadCard = document.querySelector('.upload-card');
+    uploadCard.addEventListener('dragover', e => e.preventDefault());
+    uploadCard.addEventListener('drop', e => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) loadPreview(file);
+    });
+
+    function loadPreview(file) {
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = e => {
+        previewImg.src = e.target.result;
+        previewCard.style.display = 'block';
+        resultSection.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearAll() {
+      selectedFile = null;
+      fileInput.value = '';
+      previewCard.style.display = 'none';
+      resultSection.style.display = 'none';
+      previewImg.src = '';
+    }
+
+    async function runDetection() {
+      if (!selectedFile) return;
+      const detectBtn = document.getElementById('detectBtn');
+      detectBtn.disabled = true;
+      spinner.style.display = 'flex';
+      resultSection.style.display = 'none';
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      try {
+        const res = await fetch('/predict', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.error) { alert('Error: ' + data.error); return; }
+        showResult(data);
+      } catch (err) {
+        alert('Cannot reach server. Make sure app.py is running on port 5000.');
+      } finally {
+        spinner.style.display = 'none';
+        detectBtn.disabled = false;
+      }
+    }
+
+    function showResult(data) {
+      document.getElementById('resultIcon').textContent = data.is_tumor ? '⚠' : '✓';
+      const label = document.getElementById('resultLabel');
+      label.textContent = data.is_tumor ? `Tumor Detected: ${data.predicted_class}` : 'No Tumor Detected';
+      label.className = data.is_tumor ? 'tumor-color' : 'no-tumor-color';
+      document.getElementById('resultConfidence').textContent = `Confidence: ${data.confidence.toFixed(1)}%`;
+
+      const scoresBars = document.getElementById('scoresBars');
+      scoresBars.innerHTML = '';
+      Object.entries(data.all_scores)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([label, score]) => {
+          const isTop = label === data.predicted_class;
+          const isNoTumor = label === 'No Tumor';
+          const barClass = isTop ? (isNoTumor ? 'score-bar no-tumor' : 'score-bar top') : 'score-bar';
+          const row = document.createElement('div');
+          row.className = 'score-row';
+          row.innerHTML = `
+            <span class="score-label">${label}</span>
+            <div class="score-bar-wrap">
+              <div class="${barClass}" style="width:0%" data-score="${score}"></div>
+            </div>
+            <span class="score-value">${score.toFixed(1)}%</span>`;
+          scoresBars.appendChild(row);
+        });
+
+      resultSection.style.display = 'block';
+      resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        document.querySelectorAll('.score-bar').forEach(bar => {
+          bar.style.width = Math.min(parseFloat(bar.dataset.score), 100) + '%';
+        });
+      }));
+    }
+  </script>
+
 </body>
 
 </html>

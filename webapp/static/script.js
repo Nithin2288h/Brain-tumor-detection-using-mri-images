@@ -1,9 +1,9 @@
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
+const dropZone  = document.getElementById('dropZone');
+const fileInput  = document.getElementById('fileInput');
 const previewCard = document.getElementById('previewCard');
-const previewImg = document.getElementById('previewImg');
+const previewImg  = document.getElementById('previewImg');
 const resultSection = document.getElementById('resultSection');
-const spinner = document.getElementById('spinner');
+const spinner    = document.getElementById('spinner');
 
 let selectedFile = null;
 
@@ -19,7 +19,10 @@ dropZone.addEventListener('drop', e => {
   const file = e.dataTransfer.files[0];
   if (file && file.type.startsWith('image/')) loadPreview(file);
 });
-dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('click', e => {
+  if (e.target.closest('button') || e.target === fileInput) return;
+  fileInput.click();
+});
 
 fileInput.addEventListener('change', () => {
   if (fileInput.files[0]) loadPreview(fileInput.files[0]);
@@ -61,64 +64,75 @@ async function runDetection() {
     const data = await response.json();
 
     if (data.error) {
-      alert('Error: ' + data.error);
+      alert('Prediction error: ' + data.error);
       return;
     }
 
     showResult(data);
 
   } catch (err) {
-    alert('Failed to connect to server. Make sure app.py is running!');
+    alert('Cannot reach server. Make sure app.py is running on port 5000.');
   } finally {
     spinner.style.display = 'none';
     detectBtn.disabled = false;
   }
 }
 
+// ── Display Result ──
 function showResult(data) {
-  const resultHeader = document.getElementById('resultHeader');
-  const resultIcon = document.getElementById('resultIcon');
-  const resultLabel = document.getElementById('resultLabel');
+  const resultHeader     = document.getElementById('resultHeader');
+  const resultIcon       = document.getElementById('resultIcon');
+  const resultLabel      = document.getElementById('resultLabel');
   const resultConfidence = document.getElementById('resultConfidence');
-  const scoresBars = document.getElementById('scoresBars');
+  const scoresBars       = document.getElementById('scoresBars');
 
-  // Header
-  resultHeader.className = 'result-header ' + (data.is_tumor ? 'tumor' : 'no-tumor');
-  resultIcon.textContent = data.is_tumor ? '⚠️' : '✅';
-  resultLabel.textContent = data.is_tumor ? `Tumor Detected: ${data.predicted_class}` : 'No Tumor Detected';
-  resultLabel.style.color = data.is_tumor ? '#ff4d6d' : '#00e096';
+  const isTumor = data.is_tumor;
+
+  // Header styling
+  resultHeader.className = 'result-header ' + (isTumor ? 'tumor' : 'no-tumor');
+  resultIcon.textContent = isTumor ? '⚠️' : '✅';
+
+  resultLabel.textContent = isTumor
+    ? `Tumor Detected: ${data.predicted_class}`
+    : 'No Tumor Detected';
+  resultLabel.className = isTumor ? 'tumor-color' : 'no-tumor-color';
+
   resultConfidence.textContent = `Model confidence: ${data.confidence.toFixed(1)}%`;
 
   // Confidence bars
   scoresBars.innerHTML = '';
-  const scores = data.all_scores;
   const topClass = data.predicted_class;
 
-  Object.entries(scores)
+  Object.entries(data.all_scores)
     .sort((a, b) => b[1] - a[1])
     .forEach(([label, score]) => {
-      const isTop = label === topClass;
-      const isNoTumor = label === 'No Tumor';
-      const barClass = isTop ? (isNoTumor ? 'score-bar no-tumor-bar' : 'score-bar top') : 'score-bar';
+      const isTop      = label === topClass;
+      const isNoTumor  = label === 'No Tumor';
+      const barClass   = isTop
+        ? (isNoTumor ? 'score-bar no-tumor' : 'score-bar top')
+        : 'score-bar';
 
       const row = document.createElement('div');
       row.className = 'score-row';
       row.innerHTML = `
         <span class="score-label">${label}</span>
         <div class="score-bar-wrap">
-          <div class="${barClass}" style="width: 0%" data-score="${score}"></div>
+          <div class="${barClass}" style="width:0%" data-score="${score}"></div>
         </div>
         <span class="score-value">${score.toFixed(1)}%</span>
       `;
       scoresBars.appendChild(row);
     });
 
+  // Show section, then animate bars
   resultSection.style.display = 'block';
+  resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-  // Animate bars after render
   requestAnimationFrame(() => {
-    document.querySelectorAll('.score-bar').forEach(bar => {
-      bar.style.width = bar.dataset.score + '%';
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.score-bar').forEach(bar => {
+        bar.style.width = Math.min(parseFloat(bar.dataset.score), 100) + '%';
+      });
     });
   });
 }
