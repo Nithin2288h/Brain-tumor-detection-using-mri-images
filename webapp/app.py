@@ -23,7 +23,25 @@ CLASS_DISPLAY = {
 IMG_SIZE = (128, 128)
 
 # Load model once at startup
+import urllib.request
+
 print("Loading model...")
+if not os.path.exists(MODEL_PATH):
+    # Check if a model download URL is set in environment variables (for serverless environments)
+    download_url = os.environ.get('MODEL_DOWNLOAD_URL')
+    if download_url:
+        print(f"Model file not found. Downloading from {download_url}...")
+        tmp_model_path = '/tmp/brain_tumor_detector.h5'
+        if not os.path.exists(tmp_model_path):
+            urllib.request.urlretrieve(download_url, tmp_model_path)
+            print("Model downloaded successfully!")
+        MODEL_PATH = tmp_model_path
+    else:
+        raise FileNotFoundError(
+            f"Model file not found at {MODEL_PATH}. "
+            "Please upload the model or set the 'MODEL_DOWNLOAD_URL' environment variable in your deployment settings."
+        )
+
 model = load_model(MODEL_PATH)
 print("Model loaded successfully!")
 
